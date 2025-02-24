@@ -1,3 +1,9 @@
+#                       WHAT IS GENAI
+'''
+ It is a application that uses existing model used
+ on website like chatgpt.
+'''
+
 #                       API KEY
 '''
 It is needed to access and use gemini AI models in local machine.
