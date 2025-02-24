@@ -2,7 +2,8 @@
 🌟 About My Internship
 During my internship at Innomatics Research Lab, I gained hands-on experience in Data Science and Generative AI by working on real-world projects. This experience helped me strengthen my skills in data preprocessing, AI-powered applications, and advanced analytics.
 
-🔍 Key Learnings
+🔍 **Key Learnings**
+
 📌 Data Preprocessing Techniques:
 
 Handling missing values (Mean/Median/Mode Imputation)
@@ -11,12 +12,14 @@ Feature engineering and selection
 Removing outliers using Z-score & IQR
 Encoding categorical variables (One-Hot Encoding, Label Encoding)
 Text preprocessing (Tokenization, Stopword Removal, Lemmatization)
+
 📌 Projects & Implementations:
 
 📄 AI-Powered ATS (Applicant Tracking System) Website
 Built an ATS-like web application to analyze and filter resumes using AI.
 📊 Real-World Data Analytics Project
 Worked on Innomatics Research Lab's internal dataset for data-driven insights.
+
 📌 Frameworks & Tools Learned:
 
 LangChain: A powerful framework for building AI-powered applications using LLMs.
