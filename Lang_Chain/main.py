@@ -35,30 +35,44 @@ print(p.invoke(args))
 
 #                 WHOLE CODE
 
-from langchain_core.prompts import ChatPromptTemplate
-from langchain_google_genai import GoogleGenerativeAI
-from langchain_core.output_parsers import StrOutputParser
+import ai_responser
+import streamlit as st
 
-chat_prompt = ChatPromptTemplate(
-    messages=[
-        ('system','You are a AI travel agent user will give you the source and destination location you have to give them the cost of the travel by bus,train,flight or mach more'),
-        ('user', 'I want to travel from {source} to {destination} by {travel_method}')
-    ],
-    partial_variables={'travel_method':'bus, train, flight'}
+st.set_page_config(page_title="AI Travel Partner", page_icon="✈️", layout="centered")
+
+st.markdown(
+    """
+    <style>
+    .big-font { font-size:24px !important; font-weight:bold; color:#2E86C1; }
+    .small-font { font-size:16px !important; color:#5D6D7E; }
+    .stButton>button { background-color:#2E86C1; color:white; font-size:18px; padding:10px; border-radius:10px; }
+    </style>
+    """,
+    unsafe_allow_html=True
 )
 
-model = GoogleGenerativeAI(api_key='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')
+st.markdown('<p class="big-font">🌍 AI Travel Partner</p>', unsafe_allow_html=True)
 
-response_formatter = StrOutputParser()
+with st.form("travel_form"):
+    col1, col2 = st.columns(2)
+    with col1:
+        source = st.text_input("🏙️ Source Location", placeholder="Enter starting location")
+    with col2:
+        destination = st.text_input("📍 Destination Location", placeholder="Enter destination")
 
-chain = chat_prompt | model | response_formatter
+    travel_by = st.selectbox("🚗 Travel By", ["Bus", "Train", "Flight"])
 
-user_input = input('Enter source destination and travel method: ').split(' ')
-args = {}
-args['source'] = user_input[0]
-args['destination'] = user_input[1]
-args['travel_method'] = user_input[2]
+    date = st.date_input("📅 Travel Date")
+    time = st.time_input("⏰ Travel Time")
 
-response = chain.invoke(args)
+    submit_btn = st.form_submit_button("🔍 Find Cost")
 
-print(response)
+if submit_btn:
+    time_and_date = f"{date.strftime('%d/%m/%Y')} {time.strftime('%I:%M %p')}"
+
+    response = ai_responser.find_cost(source, destination, time_and_date, travel_by)
+
+    if response:
+        st.success(response)
+    else:
+        st.error("⚠️ Unable to fetch travel cost. Please check the inputs.")
