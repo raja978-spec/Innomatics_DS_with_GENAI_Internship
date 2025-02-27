@@ -171,6 +171,12 @@ print(response)
 
 
 
+                     # PYDANTIC OUTPUT PARSER
+
+                     
+
+                          # RUNNABLE
+
 '''
 from langchain_core.output_parsers import StrOutputParser, DatetimeOutputParser
 from langchain_google_genai import ChatGoogleGenerativeAI
