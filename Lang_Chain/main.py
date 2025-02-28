@@ -173,32 +173,161 @@ print(response)
 
                      # PYDANTIC OUTPUT PARSER
 
-                     
+Used to create custom parser with type validators.
 
-                          # RUNNABLE
-
-'''
-from langchain_core.output_parsers import StrOutputParser, DatetimeOutputParser
-from langchain_google_genai import ChatGoogleGenerativeAI
+from pydantic import BaseModel, Field
 from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.output_parsers import PydanticOutputParser
+from langchain_google_genai import ChatGoogleGenerativeAI
+class Song(BaseModel):
+    name:str= Field(description='Name of the song')
+    genre:str = Field(description='Name of the genre')
+    singer_list:list = Field(description='Name of the singers list')
+    no_of_signers: int = Field(...,description='No of singers')
 
-date = DatetimeOutputParser()
 
-template = ChatPromptTemplate(
+output_parser = PydanticOutputParser(pydantic_object=Song)
+
+prompt_templet = ChatPromptTemplate(
     messages=[
-        ('system','You are a AI assistant to give the exact time and date of past historical event which user asks Output Format Instruction: {output_format}'),
-        ('human','Give me the date and time {event}')
-    ],
-    partial_variables = {'output_format': date.get_format_instructions()}
-) 
+    ('system','Your a Song AI you have to give the name of the song, genre of the song and singers of the song OUTPUT_FORMAT:{o_format}'),
+    ('user','What genre of songs is this {song_name}')
+],
+partial_variables = {'o_format': output_parser.get_format_instructions()}
+)
+
 
 API_KEY = open('.genimi.txt').read().strip()
-model = ChatGoogleGenerativeAI(api_key=API_KEY, model='gemini-2.0-flash-exp')
+model = ChatGoogleGenerativeAI(model='gemini-2.0-flash-exp', api_key=API_KEY)
 
+chain = prompt_templet | model | output_parser
 
-#chain = template | model | comma
-chain = template | model | date
-response = chain.invoke({'event':'Independence day of India'})
-
+response = chain.invoke({'song_name':'kadhal psycho'})
 print(response)
 
+# name='Kadhal Psycho' genre='Indian Pop' singer_list=['Akash Ravikrishnan', 'Deepthi Suresh'] no_of_signers=2
+
+# After specifying max_length validator the output of the genre is changed
+# name='Kadhal Psycho' genre='Folk' singer_list=['Silambarasan TR', ' Roshini', ' G.V. Prakash Kumar'] no_of_signers=3 website_name='www.youtube.com' singer_age=30
+
+
+If any of the specified validation is not meet for the model result the
+it will give error
+
+EX:
+
+from pydantic import BaseModel, Field
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.output_parsers import PydanticOutputParser
+from langchain_google_genai import ChatGoogleGenerativeAI
+class Song(BaseModel):
+    name:str= Field(description='Name of the song')
+    genre:str = Field(description='Name of the genre', max_length=5)
+    singer_list:list = Field(description='Name of the singers list')
+    no_of_signers: int = Field(...,description='No of singers') #... specifies it is mandatory field
+    website_name: str = Field(pattern=r'^www|http.com$', description='Give me the download link in this format')
+
+    # this raise error
+    singer_age: int = Field(gt=30, lt=31, description='Give the age of any one of the singer')
+
+
+output_parser = PydanticOutputParser(pydantic_object=Song)
+
+prompt_templet = ChatPromptTemplate(
+    messages=[
+    ('system','Your a Song AI you have to give the name of the song, genre of the song and singers of the song OUTPUT_FORMAT:{o_format}'),
+    ('user','What genre of songs is this {song_name}')
+],
+partial_variables = {'o_format': output_parser.get_format_instructions()}
+)
+
+
+API_KEY = open('.genimi.txt').read().strip()
+model = ChatGoogleGenerativeAI(model='gemini-2.0-flash-exp', api_key=API_KEY)
+
+chain = prompt_templet | model | output_parser
+
+response = chain.invoke({'song_name':'kadhal psycho'})
+print(response)
+
+ERROR:
+
+. Got: 1 validation error for Song
+singer_age
+  Input should be greater than 30 [type=greater_than, input_value=30, input_type=int]
+
+
+                          # JSON PARSER
+
+from pydantic import BaseModel, Field
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.output_parsers import PydanticOutputParser, JsonOutputParser
+from langchain_google_genai import ChatGoogleGenerativeAI
+class Song(BaseModel):
+    name:str= Field(description='Name of the song')
+    genre:str = Field(description='Name of the genre', max_length=5)
+    singer_list:list = Field(description='Name of the singers list')
+    no_of_signers: int = Field(...,description='No of singers') #... specifies it is mandatory field
+    website_name: str = Field(pattern=r'^www|http.com$', description='Give me the download link in this format')
+    singer_age: int = Field(gt=30, lt=35, description='Give the age of any one of the singer')
+
+output_parser = JsonOutputParser(pydantic_object=Song)
+
+prompt_templet = ChatPromptTemplate(
+    messages=[
+    ('system','Your a Song AI you have to give the name of the song, genre of the song and singers of the song OUTPUT_FORMAT:{o_format}'),
+    ('user','What genre of songs is this {song_name}')
+],
+partial_variables = {'o_format': output_parser.get_format_instructions()}
+)
+
+
+API_KEY = open('.genimi.txt').read().strip()
+model = ChatGoogleGenerativeAI(model='gemini-2.0-flash-exp', api_key=API_KEY)
+
+chain = prompt_templet | model | output_parser
+
+response = chain.invoke({'song_name':'kadhal psycho'})
+print(response)
+
+
+OUTPUT:
+
+{'name': 'Kadhal Psycho', 'genre': 'Folk', 'singer_list': [], 'no_of_signers': 2, 'website_name': 'www.example.com', 'singer_age': 32}
+
+'''
+
+#                       LCEL
+'''
+ LC- Langchain E- Extend L-Language
+'''
+from pydantic import BaseModel, Field
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.output_parsers import PydanticOutputParser, JsonOutputParser
+from langchain_google_genai import ChatGoogleGenerativeAI
+class Song(BaseModel):
+    name:str= Field(description='Name of the song')
+    genre:str = Field(description='Name of the genre', max_length=5)
+    singer_list:list = Field(description='Name of the singers list')
+    no_of_signers: int = Field(...,description='No of singers') #... specifies it is mandatory field
+    website_name: str = Field(pattern=r'^www|http.com$', description='Give me the download link in this format')
+    singer_age: int = Field(gt=30, lt=35, description='Give the age of any one of the singer')
+
+output_parser = JsonOutputParser(pydantic_object=Song)
+
+prompt_templet = ChatPromptTemplate(
+    messages=[
+    ('system','Your a Song AI you have to give the name of the song, genre of the song and singers of the song OUTPUT_FORMAT:{o_format}'),
+    ('user','What genre of songs is this {song_name}')
+],
+partial_variables = {'o_format': output_parser.get_format_instructions()}
+)
+
+
+API_KEY = open('.genimi.txt').read().strip()
+model = ChatGoogleGenerativeAI(model='gemini-2.0-flash-exp', api_key=API_KEY)
+
+chain = prompt_templet | model | output_parser
+
+response = chain.invoke({'song_name':'kadhal psycho'})
+print(response)
