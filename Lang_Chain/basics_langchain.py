@@ -297,37 +297,73 @@ OUTPUT:
 
 '''
 
-#                       LCEL
+#                       LCEL, STREAM
 '''
  LC- Langchain E- Extend L-Language
-'''
-from pydantic import BaseModel, Field
+
+ It is pipe line used to chain prompt, model, output parser
+
+
+ Stream - Gives output like chat gpt doesn't wait to generate whole
+          response while invoke waits to generate whole response and
+          then print it.
+
+EX:
+
 from langchain_core.prompts import ChatPromptTemplate
-from langchain_core.output_parsers import PydanticOutputParser, JsonOutputParser
 from langchain_google_genai import ChatGoogleGenerativeAI
-class Song(BaseModel):
-    name:str= Field(description='Name of the song')
-    genre:str = Field(description='Name of the genre', max_length=5)
-    singer_list:list = Field(description='Name of the singers list')
-    no_of_signers: int = Field(...,description='No of singers') #... specifies it is mandatory field
-    website_name: str = Field(pattern=r'^www|http.com$', description='Give me the download link in this format')
-    singer_age: int = Field(gt=30, lt=35, description='Give the age of any one of the singer')
+from langchain_core.output_parsers import StrOutputParser
 
-output_parser = JsonOutputParser(pydantic_object=Song)
-
-prompt_templet = ChatPromptTemplate(
+prompt_templates = ChatPromptTemplate(
     messages=[
-    ('system','Your a Song AI you have to give the name of the song, genre of the song and singers of the song OUTPUT_FORMAT:{o_format}'),
-    ('user','What genre of songs is this {song_name}')
-],
-partial_variables = {'o_format': output_parser.get_format_instructions()}
+        ('system','You are a AI research assistant, write good research paper with the user provided topic'),
+        ('user','Generate research paper on {topic}')
+    ]
 )
 
-
 API_KEY = open('.genimi.txt').read().strip()
-model = ChatGoogleGenerativeAI(model='gemini-2.0-flash-exp', api_key=API_KEY)
 
-chain = prompt_templet | model | output_parser
+model = ChatGoogleGenerativeAI(api_key=API_KEY, model='gemini-2.0-flash-exp')
 
-response = chain.invoke({'song_name':'kadhal psycho'})
-print(response)
+strparser = StrOutputParser()
+
+chain = prompt_templates | model | strparser
+
+for chuck in chain.stream({'topic':'Transformers'}):
+    print(chuck, end='')
+
+#print(chain.invoke({'topic':"Transformers"}))
+
+
+
+                TEMPERATURE
+
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_openai import ChatOpenAI
+from langchain_core.output_parsers import StrOutputParser
+
+prompt_templates = ChatPromptTemplate(
+    messages=[
+        ('system','You are a AI research assistant, write good research paper with the user provided topic'),
+        ('user','Generate research paper on {topic}')
+    ]
+)
+
+OPEN_API_KEY = open('.openai.txt').read().strip()
+print(OPEN_API_KEY)
+model = ChatOpenAI(api_key=OPEN_API_KEY, model_name="gpt-4o-mini",
+                               temperature=0.0)
+
+strparser = StrOutputParser()
+
+chain = prompt_templates | model | strparser
+
+for chuck in chain.stream({'topic':'Transformers'}):
+    print(chuck, end='')
+
+#print(chain.invoke({'topic':"Transformers"}))
+
+
+'''
+
+
