@@ -364,6 +364,60 @@ for chuck in chain.stream({'topic':'Transformers'}):
 #print(chain.invoke({'topic':"Transformers"}))
 
 
+                        # DEFAULT VALUES IN CUSTOM OUTPUT PARSER
+
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_core.output_parsers import JsonOutputParser, StrOutputParser
+from pydantic import BaseModel, Field
+
+class Song(BaseModel):
+    singer_name:list = Field(default=['empty'])
+    no_of_singers:int = Field(default=1) 
+
+obj = Song()
+print(obj.singer_name)
+outparser = StrOutputParser(pydantic_object=Song)
+
+prompt_template = ChatPromptTemplate(
+    messages=[
+        ('system','You are Ai assistant'),
+        ('human','give me list of singers of specified song {song_name} with outout format like this OUTPUT FORMAT: {outparser}')
+    ],
+    partial_variables = {'outparser': outparser}
+)
+
+API_KEY = open('.genimi.txt').read().strip()
+
+
+model = ChatGoogleGenerativeAI(api_key=API_KEY, model='gemini-2.0-flash-exp')
+
+chain = prompt_template | model | outparser
+
+r=chain.invoke({'song_name':'Kal Ho Naa Ho'})
+print('Processing....')
+print(r)
+
+OUTPUT:
+
+['empty']
+Processing....
+Okay, I understand. Please provide me with the song title you're interested in. 
+Once you provide the song, I will give you the list of singers in the 
+following format:
+
+**OUTPUT FORMAT:**
+
+*   **Singer 1:** \[Name of Singer 1]
+*   **Singer 2:** \[Name of Singer 2]
+*   **Singer 3:** \[Name of Singer 3]
+*   ...and so on...
+
+For the song "Kal Ho Naa Ho", here's the information:
+
+**OUTPUT FORMAT:**
+
+*   **Singer 1:** Sonu Nigam
 '''
 
 
