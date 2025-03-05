@@ -506,17 +506,18 @@ OUTPUT:
 
 Now the model it capable to memorize previous chat
 '''
+
+#             CONNECTING SQL LITE TO STORE CHAT
+'''
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.messages import SystemMessage
 from langchain_core.prompts import ChatPromptTemplate, HumanMessagePromptTemplate, MessagesPlaceholder
+from langchain_community.chat_message_histories import SQLChatMessageHistory
 
 chat_template = ChatPromptTemplate(
     messages=[
         ('system','You are a AI Chat bot'),
 
-        # Place holder for chat history
-        # optional True makes the chat_history is
-        # optional to call
         MessagesPlaceholder(variable_name='chat_history', optional=True),
 
         ('human',"{human_input}")
@@ -530,52 +531,96 @@ from langchain_core.output_parsers import StrOutputParser
 
 output_parser = StrOutputParser()
 
+
+def get_session_message_from_db(session_id):
+    chat_message_history = SQLChatMessageHistory(
+        session_id= session_id,
+        connection="sqlite:///chats_data/sqlite.db"
+    )
+    return chat_message_history
+
+
 chain = chat_template | model | output_parser
-print(type(chain)) # all three pipe line have different types
-                   # but when we chained all the pipeline
-                   # it will gives as runnable. For memory
-                   # also we have to create custom runnables.
 
+from langchain_core.runnables.history import RunnableWithMessageHistory
 
-# INITIALIZE THE MEMORY
-from langchain_core.runnables import RunnableLambda
+conversation_chain = RunnableWithMessageHistory(
+    chain,
+    get_session_message_from_db,
+    input_messages_key='human_input',
+    history_messages_key='chat_history'
 
-# RunnableLambda is the class helps to create an custom runnables
-# any python function passed to this class will become runnables
-# EX: def sum(e): return e-1 
-# custom_runnable = RunnableLambda(sum)
-# without converting our function to runnable sequuence we
-# can't chain it with | pipe symbol
+)
 
-# Below is actual example where we converted
-# get_chat_history to runnable.
-
-memory_buffer = {'history':[]}
-
-def get_chat_history(human_input):
-    return memory_buffer['history']
-
-runnable_get_history = RunnableLambda(get_chat_history)
-
-# Creating the actual chain with the runnables
-
-from langchain_core.runnables import RunnablePassthrough
-
-chain = RunnablePassthrough.assign(chat_history = runnable_get_history) | chat_template | model | output_parser
-
-
-#   SAVING TO MEMORY
-from langchain_core.messages import HumanMessage, AIMessage
 
 while True:
-    query = {'human_input':input('*User: ')}
+    user_id = "thatguy"
+    config = {'configurable':{'session_id': user_id}}
 
-    if query['human_input'] == 'q':
-        print('*AI: Have a nice day')
+    input_propmt = {'human_input':input('*User: ')}
+    response = conversation_chain.invoke(input_propmt, config=config)
+
+
+    if input_propmt['human_input'] == 'q':
         break
 
-    response = chain.invoke(query)
+    response = chain.invoke(input_propmt)
     print('*AI: ', response)
-    memory_buffer['history'].append(HumanMessage(content=query['human_input']))
-    memory_buffer['history'].append(AIMessage(content=response))
+'''
+from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_core.messages import SystemMessage
+from langchain_core.prompts import ChatPromptTemplate, HumanMessagePromptTemplate, MessagesPlaceholder
+from langchain_community.chat_message_histories import SQLChatMessageHistory
 
+chat_template = ChatPromptTemplate(
+    messages=[
+        ('system','You are a AI Chat bot'),
+
+        MessagesPlaceholder(variable_name='chat_history', optional=True),
+
+        ('human',"{human_input}")
+    ]
+)
+
+API_KEY = open('Lang_Chain/.genimi.txt').read().strip()
+model = ChatGoogleGenerativeAI(api_key=API_KEY, model='gemini-2.0-flash-exp')
+
+from langchain_core.output_parsers import StrOutputParser
+
+output_parser = StrOutputParser()
+
+
+def get_session_message_from_db(session_id):
+    chat_message_history = SQLChatMessageHistory(
+        session_id= session_id,
+        connection="sqlite:///chats_data/sqlite.db"
+    )
+    return chat_message_history
+
+
+chain = chat_template | model | output_parser
+
+from langchain_core.runnables.history import RunnableWithMessageHistory
+
+conversation_chain = RunnableWithMessageHistory(
+    chain,
+    get_session_message_from_db,
+    input_messages_key='human_input',
+    history_messages_key='chat_history'
+
+)
+
+
+while True:
+    user_id = "thatguy"
+    config = {'configurable':{'session_id': user_id}}
+
+    input_propmt = {'human_input':input('*User: ')}
+    response = conversation_chain.invoke(input_propmt, config=config)
+
+
+    if input_propmt['human_input'] == 'q':
+        break
+
+    response = chain.invoke(input_propmt)
+    print('*AI: ', response)
