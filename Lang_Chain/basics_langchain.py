@@ -420,4 +420,162 @@ For the song "Kal Ho Naa Ho", here's the information:
 *   **Singer 1:** Sonu Nigam
 '''
 
+#             MEMORY SPACE TO CHAT PREVIOUS CHATS
+'''
+from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_core.messages import SystemMessage
+from langchain_core.prompts import ChatPromptTemplate, HumanMessagePromptTemplate, MessagesPlaceholder
+
+chat_template = ChatPromptTemplate(
+    messages=[
+        ('system','You are a AI Chat bot'),
+
+        # Place holder for chat history
+        # optional True makes the chat_history is
+        # optional to call
+        MessagesPlaceholder(variable_name='chat_history', optional=True),
+
+        ('human',"{human_input}")
+    ]
+)
+
+API_KEY = open('Lang_Chain/.genimi.txt').read().strip()
+model = ChatGoogleGenerativeAI(api_key=API_KEY, model='gemini-2.0-flash-exp')
+
+from langchain_core.output_parsers import StrOutputParser
+
+output_parser = StrOutputParser()
+
+chain = chat_template | model | output_parser
+print(type(chain)) # all three pipe line have different types
+                   # but when we chained all the pipeline
+                   # it will gives as runnable. For memory
+                   # also we have to create custom runnables.
+
+
+# INITIALIZE THE MEMORY
+from langchain_core.runnables import RunnableLambda
+
+# RunnableLambda is the class helps to create an custom runnables
+# any python function passed to this class will become runnables
+# EX: def sum(e): return e-1 
+# custom_runnable = RunnableLambda(sum)
+# without converting our function to runnable sequuence we
+# can't chain it with | pipe symbol
+
+# Below is actual example where we converted
+# get_chat_history to runnable.
+
+memory_buffer = {'history':[]}
+
+def get_chat_history(human_input):
+    return memory_buffer['history']
+
+runnable_get_history = RunnableLambda(get_chat_history)
+
+# Creating the actual chain with the runnables
+
+from langchain_core.runnables import RunnablePassthrough
+
+chain = RunnablePassthrough.assign(chat_history = runnable_get_history) | chat_template | model | output_parser
+
+
+#   SAVING TO MEMORY
+from langchain_core.messages import HumanMessage, AIMessage
+
+while True:
+    query = {'human_input':input('*User: ')}
+
+    if query['human_input'] == 'q':
+        break
+
+    response = chain.invoke(query)
+    print('*AI: ', response)
+    memory_buffer['history'].append(HumanMessage(content=query['human_input']))
+    memory_buffer['history'].append(AIMessage(content=response))
+
+OUTPUT:
+
+*User: hi my name is raja
+*AI:  Hello Raja, it's nice to meet you! How can I help you today?
+*User: explain ml in 1 line
+*AI:  Machine learning enables computers to learn from data without explicit programming.
+*User: what is my name
+*AI:  Your name is Raja.
+*User:
+
+Now the model it capable to memorize previous chat
+'''
+from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_core.messages import SystemMessage
+from langchain_core.prompts import ChatPromptTemplate, HumanMessagePromptTemplate, MessagesPlaceholder
+
+chat_template = ChatPromptTemplate(
+    messages=[
+        ('system','You are a AI Chat bot'),
+
+        # Place holder for chat history
+        # optional True makes the chat_history is
+        # optional to call
+        MessagesPlaceholder(variable_name='chat_history', optional=True),
+
+        ('human',"{human_input}")
+    ]
+)
+
+API_KEY = open('Lang_Chain/.genimi.txt').read().strip()
+model = ChatGoogleGenerativeAI(api_key=API_KEY, model='gemini-2.0-flash-exp')
+
+from langchain_core.output_parsers import StrOutputParser
+
+output_parser = StrOutputParser()
+
+chain = chat_template | model | output_parser
+print(type(chain)) # all three pipe line have different types
+                   # but when we chained all the pipeline
+                   # it will gives as runnable. For memory
+                   # also we have to create custom runnables.
+
+
+# INITIALIZE THE MEMORY
+from langchain_core.runnables import RunnableLambda
+
+# RunnableLambda is the class helps to create an custom runnables
+# any python function passed to this class will become runnables
+# EX: def sum(e): return e-1 
+# custom_runnable = RunnableLambda(sum)
+# without converting our function to runnable sequuence we
+# can't chain it with | pipe symbol
+
+# Below is actual example where we converted
+# get_chat_history to runnable.
+
+memory_buffer = {'history':[]}
+
+def get_chat_history(human_input):
+    return memory_buffer['history']
+
+runnable_get_history = RunnableLambda(get_chat_history)
+
+# Creating the actual chain with the runnables
+
+from langchain_core.runnables import RunnablePassthrough
+
+chain = RunnablePassthrough.assign(chat_history = runnable_get_history) | chat_template | model | output_parser
+
+
+#   SAVING TO MEMORY
+from langchain_core.messages import HumanMessage, AIMessage
+
+while True:
+    query = {'human_input':input('*User: ')}
+
+    if query['human_input'] == 'q':
+        print('*AI: Have a nice day')
+        break
+
+    response = chain.invoke(query)
+    print('*AI: ', response)
+    memory_buffer['history'].append(HumanMessage(content=query['human_input']))
+    memory_buffer['history'].append(AIMessage(content=response))
 
