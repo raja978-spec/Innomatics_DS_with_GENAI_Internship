@@ -564,63 +564,60 @@ while True:
     if input_propmt['human_input'] == 'q':
         break
 
-    response = chain.invoke(input_propmt)
     print('*AI: ', response)
 '''
+
+
+#                     MODEL RETRIEVAL 
+'''
+It is helps models to updated with latest information, without the new latest information retrieval model will always give old results.
+The model will give hallucinated answer.
+For overcome this issue RAG is used here.
+On RAG we attached a knowledge base the model from that knowledge base all the latest info will be retrieved.
+We will give place holder to hold the latest info and that will be retrie
+
+In the above approach we have one problem that is when a size of knowledge base increases then the prompt goes to model will be huge
+EX: Assume knowledge base containing the 100 various document each have 1000+ pages
+
+
+Model will not process whole knowledge base information because it has limited constant window that will take some size of data from knowledge base instead of taking whole data. 
+To over come this issue chunking is used.
+On chunking we will pass needed part of file to give correct answer to the user question by we converting whole text knowledge base values to numeric vectors and that vectors are will be stored in a vector DB.
+
+User input also are gets converted into numeric representation and that numeric user input are passed to vector DB to find the correct answer for the user query from those collection of chunks. To identify the similar file from vector DB along with converted user input we have use another method called cosine similarity (works well for high dim data). And that founded chunk are the only info which are passed to model.
+Below is the image which elaborates the above theory process.
+
+'''     
+from langchain.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_google_genai import ChatGoogleGenerativeAI
-from langchain_core.messages import SystemMessage
-from langchain_core.prompts import ChatPromptTemplate, HumanMessagePromptTemplate, MessagesPlaceholder
 from langchain_community.chat_message_histories import SQLChatMessageHistory
+from langchain_core.runnables.history import RunnableWithMessageHistory
+from langchain_core.output_parsers import StrOutputParser
 
 chat_template = ChatPromptTemplate(
     messages=[
-        ('system','You are a AI Chat bot'),
-
-        MessagesPlaceholder(variable_name='chat_history', optional=True),
-
-        ('human',"{human_input}")
-    ]
+        ('system','You are a AI assistant, You have the access to the following data, Given a human input if you dont have answer to the question you should refer following data before answering the question: {new_data}'),
+        MessagesPlaceholder(variable_name='chat', optional=True),
+        ('user','{human_input}')
+    ],
+    partial_variables = {'new_data':None}
 )
 
 API_KEY = open('Lang_Chain/.genimi.txt').read().strip()
 model = ChatGoogleGenerativeAI(api_key=API_KEY, model='gemini-2.0-flash-exp')
 
-from langchain_core.output_parsers import StrOutputParser
-
-output_parser = StrOutputParser()
+outputparser = StrOutputParser()
 
 
-def get_session_message_from_db(session_id):
-    chat_message_history = SQLChatMessageHistory(
-        session_id= session_id,
-        connection="sqlite:///chats_data/sqlite.db"
-    )
-    return chat_message_history
-
-
-chain = chat_template | model | output_parser
-
-from langchain_core.runnables.history import RunnableWithMessageHistory
-
-conversation_chain = RunnableWithMessageHistory(
-    chain,
-    get_session_message_from_db,
-    input_messages_key='human_input',
-    history_messages_key='chat_history'
-
-)
+chain = chat_template | model | outputparser
 
 
 while True:
-    user_id = "thatguy"
-    config = {'configurable':{'session_id': user_id}}
-
-    input_propmt = {'human_input':input('*User: ')}
-    response = conversation_chain.invoke(input_propmt, config=config)
-
-
-    if input_propmt['human_input'] == 'q':
+    user_input = input('*User: ')
+    response = chain.invoke({'human_input': user_input})
+    if user_input == 'q':
+        print('*AI: bye have a nice day')
         break
+    print("*AI: ", response)
 
-    response = chain.invoke(input_propmt)
-    print('*AI: ', response)
+
